@@ -34,6 +34,11 @@ out/
 __pycache__/
 *.pyc
 
+# Python virtualenvs (TTS engines run in their own env — see README/.archon/.env)
+.venv/
+.venv-tts/
+venv/
+
 # HyperFrames render artefacts and caches
 **/.waveform-cache/
 **/out/

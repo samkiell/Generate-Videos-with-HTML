@@ -1,0 +1,15 @@
+<!-- TTS pronunciation overrides — see templates/shorts/kiv/PRONUNCIATION.md
+     - Kiv: read as one word "kiv" (rhymes with give) — never spell "K I V"
+     - "60 seconds": write the full phrase, never bare "60s" (reads as "sixties")
+     - "live" (availability sense): prefer "available"/"out today" to avoid /lɪv/
+     - "log": Kiv's verb for journaling — unambiguous, prefer over "record"
+     - AI: native "ay-eye" — do NOT space as "A I"
+-->
+
+Your whole day, captured in 60 seconds. <break time="0.35s"/> Meet Kiv. <break time="0.4s"/>
+
+Journaling fails because it asks for too much. <break time="0.35s"/> Kiv asks for 60 seconds, and one tap. <break time="0.4s"/>
+
+Here's the daily check-in. <break time="0.45s"/> First, log how you feel. <break time="0.45s"/> Then watch your streak grow. <break time="0.45s"/> And every week, look back on the patterns. <break time="0.4s"/>
+
+That's the whole habit. <break time="0.35s"/> Start journaling free at kiv dot samkiel dot tech.

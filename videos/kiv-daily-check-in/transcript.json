@@ -1,0 +1,302 @@
+[
+  {
+    "word": "Your",
+    "start": 0.225,
+    "end": 0.35
+  },
+  {
+    "word": "whole",
+    "start": 0.35,
+    "end": 0.6
+  },
+  {
+    "word": "day,",
+    "start": 0.6,
+    "end": 0.925
+  },
+  {
+    "word": "captured",
+    "start": 0.925,
+    "end": 1.2875
+  },
+  {
+    "word": "in",
+    "start": 1.2875,
+    "end": 1.4
+  },
+  {
+    "word": "60",
+    "start": 1.4,
+    "end": 1.75
+  },
+  {
+    "word": "seconds.",
+    "start": 1.75,
+    "end": 2.4875
+  },
+  {
+    "word": "Meet",
+    "start": 2.4875,
+    "end": 2.725
+  },
+  {
+    "word": "Kiv.",
+    "start": 2.725,
+    "end": 3.4
+  },
+  {
+    "word": "Journaling",
+    "start": 4.15,
+    "end": 4.5875
+  },
+  {
+    "word": "fails",
+    "start": 4.5875,
+    "end": 5.025
+  },
+  {
+    "word": "because",
+    "start": 5.025,
+    "end": 5.2875
+  },
+  {
+    "word": "it",
+    "start": 5.2875,
+    "end": 5.375
+  },
+  {
+    "word": "asks",
+    "start": 5.375,
+    "end": 5.7
+  },
+  {
+    "word": "for",
+    "start": 5.7,
+    "end": 5.825
+  },
+  {
+    "word": "too",
+    "start": 5.825,
+    "end": 5.975
+  },
+  {
+    "word": "much.",
+    "start": 5.975,
+    "end": 6.6875
+  },
+  {
+    "word": "Kiv",
+    "start": 6.6875,
+    "end": 6.9625
+  },
+  {
+    "word": "asks",
+    "start": 6.9625,
+    "end": 7.3
+  },
+  {
+    "word": "for",
+    "start": 7.3,
+    "end": 7.4375
+  },
+  {
+    "word": "60",
+    "start": 7.4375,
+    "end": 7.8
+  },
+  {
+    "word": "seconds,",
+    "start": 7.8,
+    "end": 8.375
+  },
+  {
+    "word": "and",
+    "start": 8.375,
+    "end": 8.5
+  },
+  {
+    "word": "one",
+    "start": 8.5,
+    "end": 8.725
+  },
+  {
+    "word": "tap.",
+    "start": 8.725,
+    "end": 9.35
+  },
+  {
+    "word": "Here's",
+    "start": 10.075,
+    "end": 10.3375
+  },
+  {
+    "word": "the",
+    "start": 10.3375,
+    "end": 10.424999999999999
+  },
+  {
+    "word": "daily",
+    "start": 10.424999999999999,
+    "end": 10.775
+  },
+  {
+    "word": "check-in.",
+    "start": 10.775,
+    "end": 11.5125
+  },
+  {
+    "word": "First,",
+    "start": 11.5125,
+    "end": 11.95
+  },
+  {
+    "word": "log",
+    "start": 11.95,
+    "end": 12.1875
+  },
+  {
+    "word": "how",
+    "start": 12.1875,
+    "end": 12.3
+  },
+  {
+    "word": "you",
+    "start": 12.3,
+    "end": 12.4375
+  },
+  {
+    "word": "feel.",
+    "start": 12.4375,
+    "end": 13.05
+  },
+  {
+    "word": "Then",
+    "start": 13.05,
+    "end": 13.25
+  },
+  {
+    "word": "watch",
+    "start": 13.25,
+    "end": 13.5125
+  },
+  {
+    "word": "your",
+    "start": 13.5125,
+    "end": 13.625
+  },
+  {
+    "word": "streak",
+    "start": 13.625,
+    "end": 13.95
+  },
+  {
+    "word": "grow.",
+    "start": 13.95,
+    "end": 14.575
+  },
+  {
+    "word": "And",
+    "start": 14.575,
+    "end": 14.725
+  },
+  {
+    "word": "every",
+    "start": 14.725,
+    "end": 15.024999999999999
+  },
+  {
+    "word": "week,",
+    "start": 15.024999999999999,
+    "end": 15.325
+  },
+  {
+    "word": "look",
+    "start": 15.325,
+    "end": 15.524999999999999
+  },
+  {
+    "word": "back",
+    "start": 15.524999999999999,
+    "end": 15.7625
+  },
+  {
+    "word": "on",
+    "start": 15.7625,
+    "end": 15.8625
+  },
+  {
+    "word": "the",
+    "start": 15.8625,
+    "end": 15.95
+  },
+  {
+    "word": "patterns.",
+    "start": 15.95,
+    "end": 16.825
+  },
+  {
+    "word": "That's",
+    "start": 17.55,
+    "end": 17.787499999999998
+  },
+  {
+    "word": "the",
+    "start": 17.787499999999998,
+    "end": 17.875
+  },
+  {
+    "word": "whole",
+    "start": 17.875,
+    "end": 18.099999999999998
+  },
+  {
+    "word": "habit.",
+    "start": 18.099999999999998,
+    "end": 18.775
+  },
+  {
+    "word": "Start",
+    "start": 18.775,
+    "end": 19.0
+  },
+  {
+    "word": "journaling",
+    "start": 19.0,
+    "end": 19.3625
+  },
+  {
+    "word": "free",
+    "start": 19.3625,
+    "end": 19.65
+  },
+  {
+    "word": "at",
+    "start": 19.65,
+    "end": 19.787499999999998
+  },
+  {
+    "word": "kiv",
+    "start": 19.787499999999998,
+    "end": 20.05
+  },
+  {
+    "word": "dot",
+    "start": 20.05,
+    "end": 20.325
+  },
+  {
+    "word": "samkiel",
+    "start": 20.325,
+    "end": 20.7
+  },
+  {
+    "word": "dot",
+    "start": 20.7,
+    "end": 20.95
+  },
+  {
+    "word": "tech.",
+    "start": 20.95,
+    "end": 21.575
+  }
+]

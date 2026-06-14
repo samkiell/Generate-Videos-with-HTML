@@ -1,0 +1,21 @@
+Kiv wordmark
+============
+
+The top banner renders the Kiv wordmark via CSS (#top-banner in index.html):
+a small lime tile (#top-banner-mark) + "Kiv" in Syne Bold, white
+(#top-banner-wordmark). No asset file required.
+
+This is the brand wordmark — DO NOT replace the text "Kiv". Unlike the
+brand-neutral classic template (which ships a "YOUR BRAND" placeholder you must
+swap), Kiv's wordmark is the real, final brand mark and stays as-is on every Kiv
+video.
+
+Casing: "Kiv" (capital K, lowercase iv) — NOT "KIV" all-caps, NOT "kiv"
+all-lowercase. The mixed-case form is the brand.
+
+To use an SVG logo instead of the CSS wordmark:
+  1. Drop your SVG into this assets/ folder (e.g. kiv-logo.svg).
+  2. Replace #top-banner-content's children with a single
+     <img id="top-banner-logo" src="assets/kiv-logo.svg" alt="Kiv" /> sized to
+     ~52px height. Keep it left-aligned at top:72px / left:72px.
+  3. Re-run `npx hyperframes lint videos/<slug>`.

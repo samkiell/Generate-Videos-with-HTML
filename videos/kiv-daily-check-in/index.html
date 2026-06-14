@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Kiv — Your Daily Check-In</title>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+<!-- Syne (Google Fonts) — the single brand typeface. Bold/Extrabold for
+     wordmark + headlines, Regular/Medium for body. No mono pairing: Kiv is
+     one-typeface clean, Notion/Linear energy. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* ──────────────────────────────────────────────────
+     LOCAL SYNE (render-correctness). The Google Fonts <link>
+     above keeps live preview true to the brand AND honors the
+     "load via Google Fonts" intent. But sandboxed/offline
+     renders can't reach fonts.googleapis.com, so we ALSO embed
+     Syne locally as a variable font (400–800 on one axis) — the
+     renderer resolves this @font-face and the MP4 typography is
+     guaranteed correct. Captured woff2: assets/fonts/syne-latin-var.woff2.
+     This also silences the lint google_fonts_import /
+     font_family_without_font_face warnings.
+     ────────────────────────────────────────────────── */
+  @font-face {
+    font-family: 'Syne';
+    font-style: normal;
+    font-weight: 400 800;            /* variable axis — one file covers all weights */
+    font-display: swap;
+    src: url('assets/fonts/syne-latin-var.woff2') format('woff2');
+  }
+
+  /* ──────────────────────────────────────────────────
+     CANVAS — 1080x1920 dark stage. Full design system in
+     DESIGN.md. Edit values per video; keep families.
+     Palette: Kiv — dark, minimal, micro-journaling.
+       - Pure dark canvas #0A0A0A (NOT navy, NOT near-black grey)
+       - ONE accent: electric lime #E8FF47
+       - Syne typeface, white wordmark/body
+     Aesthetic rule (HARD): no gradients, no noise/grain, no
+     decorative glow. Flat lime-on-black. Clarity over flourish.
+     ────────────────────────────────────────────────── */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 1080px;
+    height: 1920px;
+    overflow: hidden;
+    background: #0A0A0A;
+    font-family: 'Syne', system-ui, sans-serif;
+    color: #FFFFFF;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ──────────────────────────────────────────────────
+     ROOT TOKENS — colors, spacing, type scale.
+     Override per video by changing these CSS vars.
+     Kiv ships exactly ONE accent. Do not add a second
+     hue — the discipline IS the brand.
+     ────────────────────────────────────────────────── */
+  #root {
+    --bg:          #0A0A0A;   /* pure dark canvas */
+    --surface:     #141414;   /* hairline-bordered card fill, one step up */
+    --card:        #161616;   /* elevated card fill */
+    --text:        #FFFFFF;   /* primary — wordmark, hero, headlines */
+    --text-dim:    #8A8A8A;   /* muted captions, labels, meta */
+    --accent:      #E8FF47;   /* electric lime — the ONLY accent */
+    --accent-ink:  #0A0A0A;   /* text color on a lime fill */
+    --line:        rgba(255, 255, 255, 0.10);  /* hairline borders */
+    --line-strong: rgba(255, 255, 255, 0.16);  /* slightly stronger hairline */
+    --chip-bg:     rgba(255, 255, 255, 0.04);   /* neutral chip fill */
+
+    --pad-top:    240px;
+    --pad-x:      72px;
+    --pad-bottom: 240px;
+
+    --sans: 'Syne', system-ui, sans-serif;
+  }
+
+  /* No #ambient, no #noise-overlay. Kiv is flat by design — see DESIGN.md
+     "What NOT to Do". The dark canvas stays pure; motion carries the energy. */
+
+  /* ──────────────────────────────────────────────────
+     TOP CHROME — persistent wordmark across all phases.
+     "Kiv" in Syne Bold, white. Lowercase-natural casing
+     (the brand is "Kiv", not "KIV"). Left-aligned, small,
+     Linear-style — chrome, not hero.
+     ────────────────────────────────────────────────── */
+  #top-banner {
+    position: absolute;
+    top: 72px;
+    left: 72px;
+    z-index: 10;
+    pointer-events: none;
+  }
+  #top-banner-content {
+    display: inline-flex;
+    align-items: center;
+    gap: 16px;
+  }
+  /* Lime square mark — a tiny filled tile, the only "logo" Kiv needs. */
+  #top-banner-mark {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: var(--accent);
+  }
+  #top-banner-wordmark {
+    font-family: 'Syne', system-ui, sans-serif;
+    font-weight: 700;        /* Syne Bold */
+    font-size: 52px;
+    letter-spacing: -1px;
+    line-height: 1;
+    color: var(--text);
+  }
+
+  /* Slim progress bar — bottom edge, lime. Flat fill, no glow. */
+  #progress-track {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 1080px;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.06);
+    z-index: 10;
+  }
+  #progress-fill {
+    width: 0;
+    height: 100%;
+    background: var(--accent);
+  }
+
+  /* ──────────────────────────────────────────────────
+     PHASES — full-bleed, layered. Phase 1 visible by
+     default; phases 2-4 start at opacity 0. Crossfades
+     between phases handle scene change (no exits on
+     individual elements — see DESIGN.md motion rules).
+     ────────────────────────────────────────────────── */
+  .phase {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1080px;
+    height: 1920px;
+    overflow: hidden;
+  }
+  #phase1 { z-index: 1; opacity: 1; }
+  #phase2 { z-index: 2; opacity: 0; }
+  #phase3 { z-index: 3; opacity: 0; }
+  #phase4 { z-index: 4; opacity: 0; }
+
+  .phase-content {
+    width: 100%;
+    height: 100%;
+    padding: var(--pad-top) var(--pad-x) var(--pad-bottom);
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+  }
+
+  /* Overline — every phase opens with one. Syne, uppercase, lime,
+     wide tracking. This is the only place lime touches type small. */
+  .overline {
+    font-family: 'Syne', system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 34px;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  /* ──────────────────────────────────────────────────
+     PHASE 1 — HERO SLAM
+     Pattern: overline → secondary line → slam word + caption pill.
+     Kiv's hero is SOLID lime (no gradient text-fill). The word is
+     the moment; flatness is the point. Use ONCE per video.
+     ────────────────────────────────────────────────── */
+  #phase1 .phase-content {
+    align-items: flex-start;
+    justify-content: center;
+    text-align: left;
+    gap: 28px;
+  }
+  #p1-overline { color: var(--accent); }
+  #p1-pre {
+    font-family: 'Syne', system-ui, sans-serif;
+    font-weight: 600;
+    font-size: 64px;
+    line-height: 1.05;
+    letter-spacing: -1px;
+    color: var(--text);
+    max-width: 936px;
+  }
+  #p1-hero {
+    /* Tune size to your slam word: 220px fits ~7 chars at this tracking.
+       For longer words (8-10 chars) drop to 160-190px. The validator's
+       inspect step will flag overflow if you push it.
+       SOLID lime — no background-clip gradient (Kiv has no gradients). */
+    font-family: 'Syne', system-ui, sans-serif;
+    font-weight: 800;
+    font-size: 220px;
+    line-height: 0.9;
+    letter-spacing: -6px;
+    color: var(--accent);
+    max-width: 936px;
+  }
+  #p1-caption {
+    margin-top: 24px;
+    padding: 16px 30px;
+    font-family: 'Syne', system-ui, sans-serif;
+    font-weight: 600;
+    font-size: 34px;
+    letter-spacing: 0;
+    color: var(--text);
+    background: var(--chip-bg);
+    border: 1.5px solid var(--line);
+    border-radius: 16px;
+  }
+
+  /* ──────────────────────────────────────────────────
+     PHASE 2 — STAT PILL ROW
+     Pattern: overline → headline → 2 stat cards.
+     Flat dark cards, hairline borders, lime numbers.
+     No gradient fills, no colored glow.
+     ────────────────────────────────────────────────── */
+  #phase2 .phase-content {
+    align-items: flex-start;
+    justify-content: center;
+    text-align: left;
+    gap: 40px;
+  }
+  #p2-overline { color: var(--accent); }
+  #p2-headline {
+    font-family: 'Syne', system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 60px;
+    line-height: 1.06;
+    color: var(--text);
+    max-width: 936px;
+    letter-spacing: -1px;
+  }
+  #p2-pills {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+  }
+  .stat-pill {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    width: 458px;
+    min-height: 300px;
+    padding: 44px;
+    border-radius: 24px;
+    background: var(--surface);
+    border: 1.5px solid var(--line);
+  }
+  /* Structural parity with sibling templates: classes are .cyan / .magenta
+     but in Kiv they render identically (flat dark card, lime number). One
+     pill may carry a lime fill instead — see .stat-pill.accent below. */
+  .stat-pill.cyan,
+  .stat-pill.magenta {
+    background: var(--surface);
+    border: 1.5px solid var(--line);
+  }
+  /* Optional: make ONE pill the lime "hero" card. Apply class "accent". */
+  .stat-pill.accent {
+    background: var(--accent);
+    border: 1.5px solid var(--accent);
+  }
+  .stat-num {
+    font-family: 'Syne', system-ui, sans-serif;
+    font-weight: 800;
+    font-size: 184px;
+    line-height: 0.9;
+    letter-spacing: -6px;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+  .stat-pill.accent .stat-num { color: var(--accent-ink); }
+  .stat-label {
+    margin-top: 14px;
+    font-family: 'Syne', system-ui, sans-serif;
+    font-weight: 600;
+    font-size: 32px;
+    letter-spacing: 0;
+    color: var(--text-dim);
+    text-align: left;
+  }
+  .stat-pill.accent .stat-label { color: var(--accent-ink); opacity: 0.7; }
+
+  /* ──────────────────────────────────────────────────
+     PHASE 3 — FEATURE / STEP CARDS
+     Pattern: overline → 3 cards, each a flat dark row with a
+     lime index tile. No per-card color rotation — Kiv has one
+     accent, so the cards stay uniform and the lime index marks
+     the rhythm. Notion-checklist energy.
+     ────────────────────────────────────────────────── */
+  #phase3 .phase-content {
+    align-items: flex-start;
+    justify-content: center;
+    text-align: left;
+    gap: 36px;
+  }
+  #p3-overline { color: var(--accent); }
+  .timeline-list {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    width: 936px;
+  }
+  .tl-card {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 28px;
+    padding: 30px 34px;
+    border-radius: 20px;
+    background: var(--surface);
+    border: 1.5px solid var(--line);
+  }
+  /* Structural parity: .cyan / .purple / .blue all render the same flat
+     dark card in Kiv (single-accent discipline). The lime lives on the
+     index tile + date chip, not on the card body. */
+  .tl-card.cyan,
+  .tl-card.purple,
+  .tl-card.blue {
+    background: var(--surface);
+    border: 1.5px solid var(--line);
+  }
+  .tl-date {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 150px;
+    padding: 16px 20px;
+    border-radius: 14px;
+    font-family: 'Syne', system-ui, sans-serif;
+    font-weight: 800;
+    font-size: 36px;
+    letter-spacing: 0;
+    line-height: 1;
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+  .tl-body { display: flex; flex-direction: column; gap: 6px; flex: 1; text-align: left; }
+  .tl-title {
+    /* 52px — meets shorts-typography.md list-item primary-label floor (>=48px). */
+    font-family: 'Syne', system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 52px;
+    line-height: 1.06;
+    color: var(--text);
+    letter-spacing: -0.5px;
+  }
+  .tl-sub {
+    /* 32px — lands in the 32-36px descriptor band (was on the 30px floor). */
+    font-family: 'Syne', system-ui, sans-serif;
+    font-weight: 500;
+    font-size: 32px;
+    letter-spacing: 0;
+    color: var(--text-dim);
+  }
+  .tl-index {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 72px;          /* fits two Syne-800 digits at 30px without overflow */
+    height: 64px;
+    border-radius: 14px;
+    font-family: 'Syne', system-ui, sans-serif;
+    font-weight: 800;
+    font-size: 30px;
+    line-height: 1;
+    background: var(--chip-bg);
+    border: 1.5px solid var(--line-strong);
+    color: var(--accent);
+  }
+
+  /* ──────────────────────────────────────────────────
+     PHASE 4 — CTA / URL SLAM
+     Pattern: overline → CTA line → URL pill → button.
+     The closing frame is thumbnail-grade: brand mark + topic
+     statement + outcome + CTA all held still (see rule
+     shorts-thumbnail-final-frame.md).
+     ────────────────────────────────────────────────── */
+  #phase4 .phase-content {
+    align-items: flex-start;
+    justify-content: center;
+    text-align: left;
+    gap: 32px;
+  }
+  #p4-overline { color: var(--accent); }
+  #p4-headline {
+    font-family: 'Syne', system-ui, sans-serif;
+    font-weight: 800;
+    font-size: 92px;
+    line-height: 0.96;
+    letter-spacing: -3px;
+    color: var(--text);
+    max-width: 936px;
+  }
+  #p4-url {
+    font-family: 'Syne', system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 64px;
+    letter-spacing: -0.5px;
+    color: var(--accent-ink);
+    line-height: 1.0;
+    padding: 24px 44px;
+    border-radius: 9999px;
+    background: var(--accent);
+    border: none;
+    display: inline-block;
+  }
+  #p4-outcome {
+    font-family: 'Syne', system-ui, sans-serif;
+    font-weight: 500;
+    font-size: 36px;
+    color: var(--text-dim);
+    max-width: 936px;
+  }
+  #p4-subscribe {
+    display: inline-flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px 40px;
+    border-radius: 9999px;
+    background: var(--chip-bg);
+    border: 1.5px solid var(--line-strong);
+    font-family: 'Syne', system-ui, sans-serif;
+    font-weight: 600;
+    font-size: 48px;        /* CTA-pill floor is 44px (shorts-typography.md) */
+    color: var(--text);
+    letter-spacing: 0;
+  }
+  #p4-subscribe .arrow {
+    color: var(--accent);
+    font-family: 'Syne', system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 44px;
+    line-height: 0.7;
+  }
+</style>
+</head>
+<body>
+<div data-hf-id="hf-41zq" id="root" data-composition-id="main" data-start="0" data-duration="23.1" data-width="1080" data-height="1920">
+
+  <!-- Persistent top wordmark: lime tile + "Kiv" in Syne Bold, white.
+       Lowercase-natural ("Kiv", not "KIV"). Left-aligned chrome. -->
+  <div data-hf-id="hf-bwhl" id="top-banner">
+    <div data-hf-id="hf-3q5t" id="top-banner-content">
+      <div data-hf-id="hf-scqp" id="top-banner-mark"></div>
+      <div data-hf-id="hf-648t" id="top-banner-wordmark">Kiv</div>
+    </div>
+  </div>
+
+  <!-- Slim progress bar -->
+  <div data-hf-id="hf-o48q" id="progress-track"><div data-hf-id="hf-c4bu" id="progress-fill"></div></div>
+
+  <!-- =======================================================
+       PHASE 1 — HERO SLAM (0-6s)
+       Solid lime hero word. No gradient, no glow.
+       ======================================================= -->
+  <div data-hf-id="hf-p0t5" id="phase1" class="phase">
+    <div data-hf-id="hf-jt7x" class="phase-content">
+      <div data-hf-id="hf-i727" class="overline" id="p1-overline">DAILY CHECK-IN</div>
+      <div data-hf-id="hf-t73n" id="p1-pre">Your whole day, captured in</div>
+      <div data-hf-id="hf-6lv6" id="p1-hero">60s.</div>
+      <div data-hf-id="hf-ravt" id="p1-caption">Meet Kiv. One tap, logged.</div>
+    </div>
+  </div>
+
+  <!-- =======================================================
+       PHASE 2 — STAT ROW (6-12s)
+       Flat dark cards, lime numbers. One card may use .accent
+       to carry a lime fill for emphasis.
+       ======================================================= -->
+  <div data-hf-id="hf-syx6" id="phase2" class="phase">
+    <div data-hf-id="hf-5d29" class="phase-content">
+      <div data-hf-id="hf-ql7z" class="overline" id="p2-overline">WHY IT STICKS</div>
+      <div data-hf-id="hf-638h" id="p2-headline">Most journaling asks too much.</div>
+      <div data-hf-id="hf-c7aw" id="p2-pills">
+        <div data-hf-id="hf-tdny" class="stat-pill accent" id="p2-pill-1">
+          <div data-hf-id="hf-qhzj" class="stat-num">60</div>
+          <div data-hf-id="hf-ivjh" class="stat-label">seconds a day</div>
+        </div>
+        <div data-hf-id="hf-vrx3" class="stat-pill" id="p2-pill-2">
+          <div data-hf-id="hf-3w68" class="stat-num">1</div>
+          <div data-hf-id="hf-53gk" class="stat-label">tap to check in</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =======================================================
+       PHASE 3 — FEATURE CARDS (12-18s)
+       Uniform flat cards. Lime index tiles mark the rhythm.
+       ======================================================= -->
+  <div data-hf-id="hf-wx17" id="phase3" class="phase">
+    <div data-hf-id="hf-6jzc" class="phase-content">
+      <div data-hf-id="hf-w9jr" class="overline" id="p3-overline">HOW IT WORKS</div>
+      <div data-hf-id="hf-9062" class="timeline-list">
+        <div data-hf-id="hf-h7zz" class="tl-card" id="p3-card-1">
+          <div data-hf-id="hf-21km" class="tl-date">01</div>
+          <div data-hf-id="hf-51b9" class="tl-body">
+            <div data-hf-id="hf-0lls" class="tl-title">Log how you feel</div>
+            <div data-hf-id="hf-ja08" class="tl-sub">Pick a mood, add a line</div>
+          </div>
+          <div data-hf-id="hf-zydw" class="tl-index">01</div>
+        </div>
+        <div data-hf-id="hf-8k44" class="tl-card" id="p3-card-2">
+          <div data-hf-id="hf-2fvn" class="tl-date">02</div>
+          <div data-hf-id="hf-l54p" class="tl-body">
+            <div data-hf-id="hf-1xug" class="tl-title">Build your streak</div>
+            <div data-hf-id="hf-9s4h" class="tl-sub">Show up, day after day</div>
+          </div>
+          <div data-hf-id="hf-yrgt" class="tl-index">02</div>
+        </div>
+        <div data-hf-id="hf-9brx" class="tl-card" id="p3-card-3">
+          <div data-hf-id="hf-2u6o" class="tl-date">03</div>
+          <div data-hf-id="hf-mc1s" class="tl-body">
+            <div data-hf-id="hf-6gec" class="tl-title">Look back weekly</div>
+            <div data-hf-id="hf-3dhj" class="tl-sub">See the patterns emerge</div>
+          </div>
+          <div data-hf-id="hf-z5ru" class="tl-index">03</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =======================================================
+       PHASE 4 — CTA / THUMBNAIL HOLD (18-24s)
+       Thumbnail-grade final frame: brand mark + topic + URL +
+       outcome held still ≥1.5s. See shorts-thumbnail-final-frame.md.
+       ======================================================= -->
+  <div data-hf-id="hf-9fjo" id="phase4" class="phase">
+    <div data-hf-id="hf-65ob" class="phase-content">
+      <div data-hf-id="hf-jpis" class="overline" id="p4-overline">START TODAY</div>
+      <div data-hf-id="hf-djon" id="p4-headline">Start journaling free.</div>
+      <div data-hf-id="hf-t1x9" id="p4-url">kiv.samkiel.tech</div>
+      <div data-hf-id="hf-0s4v" id="p4-outcome">60 seconds a day. That's the whole habit.</div>
+      <div data-hf-id="hf-x1u9" id="p4-subscribe">Follow for more<span data-hf-id="hf-v68i" class="arrow">→</span></div>
+    </div>
+  </div>
+
+  <!-- =======================================================
+       NARRATION + SFX
+       Rules:        .claude/rules/audio-design.md
+       Cue catalog:  shared/audio/MANIFEST.md
+       Sync into this project (after you copy this template):
+         bash scripts/sync-video-sfx.sh videos/<slug> impact-slam spring-pop
+       Then uncomment the blocks below and tune the data-* values per scene.
+       ======================================================= -->
+
+  <!--
+  Narration — single track, replaces this comment in real videos.
+
+    audio id="narration"
+           class="clip"
+           src="audio/narration.wav"
+           data-start="0"
+           data-duration="0"
+           data-track-index="2"
+           data-volume="1"
+
+  Per-cue SFX — one element per beat. data-track-index 3+ for SFX; bump per
+  concurrent cue. data-volume per .claude/rules/audio-design.md (<= 0.25).
+
+    audio id="sfx-impact"
+           class="clip"
+           src="assets/sfx/impact-slam.mp3"
+           data-start="1.55"
+           data-duration="0.6"
+           data-track-index="3"
+           data-volume="0.15"
+  -->
+
+  <!-- Narration — single Kokoro track. data-duration = narration_data_duration
+       (= phase4_end) from compute_timings.py. -->
+  <audio data-hf-id="hf-axmx" id="narration" class="clip" src="audio/narration.wav" data-start="0" data-duration="21.57" data-track-index="2" data-volume="1"></audio>
+
+  <!-- No film-grain overlay. Kiv is flat by design (see DESIGN.md). -->
+</div>
+
+<script>
+  window.__timelines = window.__timelines || {};
+  const tl = gsap.timeline({ paused: true });
+
+  // Progress bar fills to FULL by narration end (21.57s), then holds static
+  // through the thumbnail-grade final frame (no motion during the hold, per
+  // shorts-thumbnail-final-frame.md). Duration = narration_data_duration, NOT
+  // total_duration (23.1).
+  tl.fromTo("#progress-fill",
+    { width: 0 },
+    { width: 1080, duration: 21.57, ease: "none" },
+    0);
+
+  // Top banner fade-in (one-shot, then static)
+  tl.from("#top-banner", { y: -16, opacity: 0, duration: 0.6, ease: "power2.out" }, 0.2);
+
+  // =======================================================
+  // PHASE 1 — Hero slam (0-6s) : entrances only
+  // =======================================================
+  tl.from("#p1-overline", { y: 20, opacity: 0, duration: 0.5, ease: "power2.out" }, 0.4);
+  tl.from("#p1-pre",      { y: 30, opacity: 0, duration: 0.6, ease: "power3.out" }, 0.8);
+  tl.from("#p1-hero",     { scale: 0.80, opacity: 0, duration: 0.8, ease: "back.out(1.6)" }, 1.0);
+  // NOTE: Kiv has NO gradient text-fill, so there is no background-position
+  // drift on the hero word. compute_timings.py still emits
+  // `gradient_drift_duration`; it is intentionally UNUSED in this template.
+  // Inline shake on the slam frame — 4 short ticks ±5px, then settle.
+  // slam_t = transcript start of "60" (the spoken word the "60s." hero locks to).
+  const shake_offsets = [5, -5, 4, 0];
+  const slam_t = 1.4;
+  tl.to("#p1-hero", { x: shake_offsets[0], duration: 0.04, ease: "none", overwrite: "auto" }, slam_t);
+  tl.to("#p1-hero", { x: shake_offsets[1], duration: 0.04, ease: "none", overwrite: "auto" }, slam_t + 0.05);
+  tl.to("#p1-hero", { x: shake_offsets[2], duration: 0.04, ease: "none", overwrite: "auto" }, slam_t + 0.10);
+  tl.to("#p1-hero", { x: shake_offsets[3], duration: 0.04, ease: "none", overwrite: "auto" }, slam_t + 0.15);
+  tl.from("#p1-caption", { y: 24, opacity: 0, duration: 0.5, ease: "power2.out" }, 2.2);
+
+  // --- Transition phase1 -> phase2 at 3.2s : crossfade (no blur; flat aesthetic) ---
+  const T1 = 3.2;
+  tl.to("#phase1", { opacity: 0, duration: 0.45, ease: "power1.in" }, T1 + 0.2);
+  tl.set("#phase1", { visibility: "hidden" }, T1 + 0.7);
+  tl.set("#phase2", { opacity: 0, visibility: "visible" }, T1 + 0.3);
+  tl.to("#phase2", { opacity: 1, duration: 0.4, ease: "power1.inOut", overwrite: "auto" }, T1 + 0.4);
+
+  // =======================================================
+  // PHASE 2 — Stat row (6-12s) : entrances only
+  // =======================================================
+  // Pills anchored to narration word-starts (step-by-step-reveal rule):
+  //   pill-1 "60 / seconds a day"  -> "60"      @ 7.44s
+  //   pill-2 "1 / tap to check in" -> "one tap" @ 8.50s
+  const P2 = 3.6;
+  tl.from("#p2-overline", { y: 20, opacity: 0, duration: 0.5, ease: "power2.out" }, P2 + 0.0);
+  tl.from("#p2-headline", { y: 30, opacity: 0, duration: 0.6, ease: "power3.out" }, P2 + 0.3);
+  tl.from("#p2-pill-1",   { y: 28, opacity: 0, duration: 0.5, ease: "back.out(1.5)" }, 7.35);
+  tl.from("#p2-pill-2",   { y: 28, opacity: 0, duration: 0.5, ease: "back.out(1.5)" }, 8.45);
+
+  // --- Transition phase2 -> phase3 at 9.15s ---
+  const T2 = 9.15;
+  tl.to("#phase2", { opacity: 0, duration: 0.45, ease: "power1.in" }, T2 + 0.2);
+  tl.set("#phase2", { visibility: "hidden" }, T2 + 0.7);
+  tl.set("#phase3", { opacity: 0, visibility: "visible" }, T2 + 0.3);
+  tl.to("#phase3", { opacity: 1, duration: 0.4, ease: "power1.inOut", overwrite: "auto" }, T2 + 0.4);
+
+  // =======================================================
+  // PHASE 3 — Feature cards (12-18s) : entrances only
+  // =======================================================
+  // Cards anchored to narration word-starts (step-by-step-reveal rule):
+  //   card-1 "Log how you feel"   -> "First,"  @ 11.51s
+  //   card-2 "Build your streak"  -> "Then"    @ 13.05s
+  //   card-3 "Look back weekly"   -> "And every week" @ 14.57s
+  const P3 = 9.55;
+  tl.from("#p3-overline", { y: 20, opacity: 0, duration: 0.5, ease: "power2.out" }, P3 + 0.0);
+  tl.from("#p3-card-1",   { x: -40, opacity: 0, duration: 0.5, ease: "back.out(1.4)" }, 11.45);
+  tl.from("#p3-card-2",   { x: -40, opacity: 0, duration: 0.5, ease: "back.out(1.4)" }, 13.0);
+  tl.from("#p3-card-3",   { x: -40, opacity: 0, duration: 0.5, ease: "back.out(1.4)" }, 14.55);
+
+  // --- Transition phase3 -> phase4 at 16.62s ---
+  const T3 = 16.62;
+  tl.to("#phase3", { opacity: 0, duration: 0.45, ease: "power1.in" }, T3 + 0.2);
+  tl.set("#phase3", { visibility: "hidden" }, T3 + 0.7);
+  tl.set("#phase4", { opacity: 0, visibility: "visible" }, T3 + 0.3);
+  tl.to("#phase4", { opacity: 1, duration: 0.4, ease: "power1.inOut", overwrite: "auto" }, T3 + 0.4);
+
+  // =======================================================
+  // PHASE 4 — CTA / thumbnail hold (18-24s) : entrances only
+  // All motion finishes by P4 + ~1.0s, leaving ≥1.5s static hold.
+  // =======================================================
+  // P4 anchored to narration (step-by-step + thumbnail-frame rules):
+  //   overline   -> phase entrance @ ~17.0s
+  //   headline   -> "Start journaling free" @ 18.77s
+  //   url pill   -> "kiv dot samkiel dot tech" @ 19.79s
+  //   outcome/sub-> settle right after the URL; all motion done by ~21.3s,
+  //                leaving ~1.7s of static thumbnail-grade hold to total=23.1s.
+  const P4 = 17.02;
+  tl.from("#p4-overline",  { y: 20, opacity: 0, duration: 0.5, ease: "power2.out" }, P4 + 0.0);
+  tl.from("#p4-url",       { scale: 0.88, opacity: 0, duration: 0.6, ease: "back.out(1.5)" }, 19.7);
+  tl.from("#p4-outcome",   { y: 18, opacity: 0, duration: 0.45, ease: "power2.out" }, 20.5);
+  tl.from("#p4-subscribe", { y: 18, opacity: 0, duration: 0.45, ease: "power2.out" }, 20.9);
+
+  tl.from("#p4-headline", { y: 30, duration: 0.6, ease: "power3.out" }, 18.65);
+
+  tl.from("#p4-headline", { opacity: 0, duration: 0.6, ease: "power3.out" }, 18.65);
+
+  tl.to("#p4-headline", { keyframes: { "89%": { width: 953, height: 316 } }, duration: 5 }, 18.65);
+
+  // Phase 4 stays fully visible to the end — composition ends on a held,
+  // thumbnail-grade frame (wordmark + headline + URL + outcome), static
+  // from ~21.35s to 23.1s (≥1.5s hold per shorts-thumbnail-final-frame.md).
+
+  window.__timelines["main"] = tl;
+</script>
+</body>
+</html>
